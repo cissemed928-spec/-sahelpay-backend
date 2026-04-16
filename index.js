@@ -56,21 +56,37 @@ app.post("/api/auth/register", async (req, res) => {
 
 // ================== LOGIN ==================
 app.post("/api/auth/login", async (req, res) => {
-  const { phone, password } = req.body;
+  try {
+    const { phone, password } = req.body;
 
-  const user = await User.findOne({ phone });
-  if (!user) return res.status(400).json({ message: "User not found" });
+    if (!phone || !password) {
+      return res.status(400).json({ message: "Phone and password required" });
+    }
 
-  const ok = await bcrypt.compare(password, user.password);
-  if (!ok) return res.status(400).json({ message: "Wrong password" });
+    const user = await User.findOne({ phone });
 
-  const token = jwt.sign(
-    { id: user._id },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
 
-  res.json({ token });
+    const ok = await bcrypt.compare(password, user.password);
+
+    if (!ok) {
+      return res.status(400).json({ message: "Wrong password" });
+    }
+
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return res.json({ token });
+
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
 });
 
 // ================== PROFILE ==================
